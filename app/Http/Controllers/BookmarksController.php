@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bookmark;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class BookmarksController extends Controller
 {
@@ -14,7 +15,15 @@ class BookmarksController extends Controller
      */
     public function index()
     {
-        // 
+        $bookmarks = Bookmark::all();
+
+        $bookmarks = Cache::tags('bookmarks')->remember('bookmarks', config('bookmarks.cache.time'), function () {
+            $rows = ['id', 'title', 'url','favicon', 'created_at'];
+            $perPage = config('bookmarks.paginate');
+            return Bookmark::select($rows)->paginate($perPage);
+        });
+
+        return view('bookmarks.index', compact('bookmarks'));
     }
 
     /**
