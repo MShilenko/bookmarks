@@ -8,17 +8,19 @@ use Illuminate\Support\Facades\Cache;
 
 class BookmarksController extends Controller
 {
+    public const FIRST_PAGE = 1;
+
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $bookmarks = Bookmark::all();
+        $page = $request->query('page') ?? self::FIRST_PAGE;
 
-        $bookmarks = Cache::tags('bookmarks')->remember('bookmarks', config('bookmarks.cache.time'), function () {
-            $rows = ['id', 'title', 'url','favicon', 'created_at'];
+        $bookmarks = Cache::tags(["bookmarks", "page|{$page}"])->remember("bookmarks", config('bookmarks.cache.time'), function () {
+            $rows = ['id', 'title', 'url', 'favicon', 'created_at'];
             $perPage = config('bookmarks.paginate');
             return Bookmark::select($rows)->paginate($perPage);
         });
