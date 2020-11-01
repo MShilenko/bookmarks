@@ -1,6 +1,10 @@
 @extends('layout.master')
 
 @section('content')
+  <div class="col-sm-12 sort">
+    @include('bookmarks.forms.sort')
+  </div>
+
   @foreach ($bookmarks as $bookmark)
     <div class="col-md-4">
         <div class="card mb-4 shadow-sm">
@@ -20,7 +24,7 @@
   @endforeach
 
   <div class="col-sm-12">
-    {{ $bookmarks->links() }}
+    {{ $bookmarks->withQueryString()->links() }}
   </div>
 
 @endsection

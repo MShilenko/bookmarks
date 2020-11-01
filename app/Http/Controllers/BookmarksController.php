@@ -23,12 +23,15 @@ class BookmarksController extends Controller
     public function index(Request $request)
     {
         $page = $request->query('page') ?? self::FIRST_PAGE;
+        $sort = $request->query('sort') ?? 'created_at';
+        $order = $request->query('order') ?? 'desc';
 
-        $bookmarks = Cache::tags(["bookmarks", "bookmarks|page|{$page}"])->remember("bookmarks|page|{$page}", config('bookmarks.cache.time'), function () {
-            $rows = ['id', 'title', 'url', 'favicon', 'created_at'];
-            $perPage = config('bookmarks.paginate');
-            return Bookmark::select($rows)->orderBy('created_at', 'desc')->paginate($perPage);
-        });
+        $bookmarks = Cache::tags(["bookmarks", "bookmarks|page|{$page}|sort|{$sort}|order|{$order}"])
+            ->remember("bookmarks|page|{$page}|sort|{$sort}|order|{$order}", config('bookmarks.cache.time'), function () use ($sort, $order) {
+                $rows = ['id', 'title', 'url', 'favicon', 'created_at'];
+                $perPage = config('bookmarks.paginate');
+                return Bookmark::select($rows)->orderBy($sort, $order)->paginate($perPage);
+            });
 
         return view('bookmarks.index', compact('bookmarks'));
     }
@@ -53,21 +56,21 @@ class BookmarksController extends Controller
     {
         $validated = $request->validated();
         $parser = new SimpleDOMParser($validated['url'], [
-            'title' => 'h1', 
-            'meta.title' => 'title', 
-            'meta.description' => ['meta', 'name.description', 'content'], 
-            'meta.keywords' => ['meta', 'name.keywords', 'content'], 
-            'favicon' => ['link', 'rel.shortcut icon', 'href'], 
-            ]);
+            'title' => 'h1',
+            'meta.title' => 'title',
+            'meta.description' => ['meta', 'name.description', 'content'],
+            'meta.keywords' => ['meta', 'name.keywords', 'content'],
+            'favicon' => ['link', 'rel.shortcut icon', 'href'],
+        ]);
 
         try {
             $data = $parser->getData();
         } catch (\Exception $e) {
             Log::error("{$e->getMessage()} - {$e->getFile()}:{$e->getLine()}");
             flash('An error occurred while loading data.', 'danger');
-            return back()->withInput(); 
+            return back()->withInput();
         }
-        
+
         $bookmark = Bookmark::create([
             'title' => $data['title'] ?? $data['meta.title'],
             'url' => $validated['url'],
@@ -79,7 +82,7 @@ class BookmarksController extends Controller
             'description' => $data['meta.description'],
             'keywords' => $data['meta.keywords'],
         ]);
-        
+
         return redirect(route('bookmarks.show', ['bookmark' => $bookmark]));
     }
 
