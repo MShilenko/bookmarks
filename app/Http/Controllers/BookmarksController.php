@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Bookmark;
 use Illuminate\Http\Request;
 use App\Http\Parsers\SimpleDOMParser;
+use App\Http\Parsers\SimpleXLSParser;
 use App\Http\Requests\DestroyBookmark;
 use App\Http\Requests\StoreBookmark;
 use Illuminate\Support\Facades\Cache;
@@ -121,5 +122,18 @@ class BookmarksController extends Controller
 
         $bookmark->delete();
         return redirect(route('bookmarks.index'));
+    }
+
+    /** Initializing model export */
+    public function export()
+    {
+        try {
+        $parser = new SimpleXLSParser(['id', 'title', 'url', 'favicon', 'created_at'], new Bookmark());
+        $parser->getData();
+        } catch (\Exception $e) {
+            Log::error("{$e->getMessage()} - {$e->getFile()}:{$e->getLine()}");
+            flash('An error occurred while loading data.', 'danger');
+            return back()->withInput();
+        }
     }
 }
