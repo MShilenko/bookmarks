@@ -16,4 +16,5 @@ use App\Http\Controllers\BookmarksController;
 
 Route::get('/', [BookmarksController::class, 'index'])->name('bookmarks.index');
 Route::get('/bookmarks/export', [BookmarksController::class, 'export'])->name('bookmarks.export');
+Route::get('/bookmarks/search', [BookmarksController::class, 'search'])->name('bookmarks.search');
 Route::resource('/bookmarks', BookmarksController::class)->except(['index', 'edit', 'update']);

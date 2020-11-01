@@ -8,6 +8,7 @@ use App\Http\Parsers\SimpleDOMParser;
 use App\Http\Parsers\SimpleXLSParser;
 use App\Http\Requests\DestroyBookmark;
 use App\Http\Requests\StoreBookmark;
+use Database\Seeders\BookmarkSeeder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -135,5 +136,19 @@ class BookmarksController extends Controller
             flash('An error occurred while loading data.', 'danger');
             return back()->withInput();
         }
+    }
+
+    /**
+     * Accept the search query and render the result
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function search(Request $request)
+    {
+        $perPage = config('bookmarks.paginate');
+        $bookmarks = Bookmark::search($request->find)->orderBy('created_at', 'desc')->paginate($perPage);
+
+        return view('bookmarks.index', compact('bookmarks'));
     }
 }

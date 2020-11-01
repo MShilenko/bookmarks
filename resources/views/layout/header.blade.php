@@ -6,6 +6,7 @@
       </a>
       <a href="{{ route('bookmarks.create') }}" class="btn btn-light">Add new bookmark</a>
       <a href="{{ route('bookmarks.export') }}" class="btn btn-light ml-2">Export</a>
+      @include('bookmarks.forms.search')
     </div>
   </div>
 </header>
