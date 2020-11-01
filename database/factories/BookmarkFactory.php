@@ -26,7 +26,7 @@ class BookmarkFactory extends Factory
             'title' => $this->faker->unique()->words(rand(2, 4), true),
             'url' => $this->faker->unique()->url(),
             'password_to_delete' => Hash::make($this->faker->password()),
-            'favicon' => 'default.svg',
+            'favicon' => config('bookmarks.images.default'),
         ];
     }
 }

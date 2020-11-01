@@ -10,13 +10,10 @@ class Bookmark extends Model
 {
     use HasFactory;
 
+    protected $fillable = ['title', 'url', 'favicon', 'password_to_delete'];
+
     protected static function booted() 
     {
-        static::updated(function($model) {
-            Cache::tags(["bookmarks", "bookmark|{$model->id}"])->flush();
-            flash('The bookmark was successfully updated!');
-        });
-
         static::created(function($model) {
             Cache::tags(["bookmarks", "bookmark|{$model->id}"])->flush();
             flash('The bookmark was successfully created!');

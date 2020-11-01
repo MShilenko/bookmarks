@@ -35,7 +35,8 @@
   footer p {
     margin-bottom: .25rem;
   }
-  .card-text  img {
+  .card-text img,
+  .card-show img {
     max-width: 20px;
     height: auto;
   }

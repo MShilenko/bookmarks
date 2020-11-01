@@ -15,4 +15,4 @@ use App\Http\Controllers\BookmarksController;
 */
 
 Route::get('/', [BookmarksController::class, 'index'])->name('bookmarks.index');
-Route::resource('/bookmarks', BookmarksController::class)->except('index');
+Route::resource('/bookmarks', BookmarksController::class)->except(['index', 'edit', 'update']);

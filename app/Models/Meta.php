@@ -10,6 +10,7 @@ class Meta extends Model
     use HasFactory;
 
     protected $table = 'meta';
+    protected $fillable = ['title', 'description', 'keywords'];
 
     public function bookmark()
     {

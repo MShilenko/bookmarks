@@ -17,8 +17,8 @@ class CreateBookmarksTable extends Migration
             $table->id();
             $table->string('title', 100);
             $table->string('url')->unique();
-            $table->string('favicon', 100);
-            $table->string('password_to_delete');
+            $table->string('favicon', 100)->nullable();
+            $table->string('password_to_delete')->nullable();
             $table->timestamps();
         });
     }

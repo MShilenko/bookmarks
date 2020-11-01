@@ -4,7 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Bookmark;
 use Illuminate\Http\Request;
+use App\Http\Parsers\SimpleDOMParser;
+use App\Http\Requests\DestroyBookmark;
+use App\Http\Requests\StoreBookmark;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class BookmarksController extends Controller
 {
@@ -19,10 +24,10 @@ class BookmarksController extends Controller
     {
         $page = $request->query('page') ?? self::FIRST_PAGE;
 
-        $bookmarks = Cache::tags(["bookmarks", "page|{$page}"])->remember("bookmarks", config('bookmarks.cache.time'), function () {
+        $bookmarks = Cache::tags(["bookmarks", "bookmarks|page|{$page}"])->remember("bookmarks|page|{$page}", config('bookmarks.cache.time'), function () {
             $rows = ['id', 'title', 'url', 'favicon', 'created_at'];
             $perPage = config('bookmarks.paginate');
-            return Bookmark::select($rows)->paginate($perPage);
+            return Bookmark::select($rows)->orderBy('created_at', 'desc')->paginate($perPage);
         });
 
         return view('bookmarks.index', compact('bookmarks'));
@@ -35,18 +40,47 @@ class BookmarksController extends Controller
      */
     public function create()
     {
-        //
+        return view('bookmarks.create');
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  App\Http\Requests\StoreBookmark  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreBookmark $request)
     {
-        //
+        $validated = $request->validated();
+        $parser = new SimpleDOMParser($validated['url'], [
+            'title' => 'h1', 
+            'meta.title' => 'title', 
+            'meta.description' => ['meta', 'name.description', 'content'], 
+            'meta.keywords' => ['meta', 'name.keywords', 'content'], 
+            'favicon' => ['link', 'rel.shortcut icon', 'href'], 
+            ]);
+
+        try {
+            $data = $parser->getData();
+        } catch (\Exception $e) {
+            Log::error("{$e->getMessage()} - {$e->getFile()}:{$e->getLine()}");
+            flash('An error occurred while loading data.', 'danger');
+            return back()->withInput(); 
+        }
+        
+        $bookmark = Bookmark::create([
+            'title' => $data['title'] ?? $data['meta.title'],
+            'url' => $validated['url'],
+            'favicon' => $data['favicon'] ? getCorrectUrl($validated['url'], $data['favicon']) : config('bookmarks.images.default'),
+            'password_to_delete' => $request['password_to_delete'] ? Hash::make($request['password_to_delete']) : '',
+        ]);
+        $bookmark->meta()->create([
+            'title' => $data['meta.title'],
+            'description' => $data['meta.description'],
+            'keywords' => $data['meta.keywords'],
+        ]);
+        
+        return redirect(route('bookmarks.show', ['bookmark' => $bookmark]));
     }
 
     /**
@@ -55,42 +89,34 @@ class BookmarksController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(int $id)
     {
-        //
-    }
+        if (!Cache::tags(["bookmark|{$id}"])->has("bookmark|{$id}")) {
+            Cache::tags(["bookmark|{$id}"])->put("bookmark|{$id}", Bookmark::findOrFail($id), config('bookmarks.cache.time'));
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
+        $bookmark = Cache::tags(["bookmark|{$id}"])->get("bookmark|{$id}");
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
+        return view('bookmarks.show', compact('bookmark'));
     }
 
     /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
+     * @param  App\Http\Requests\DestroyBookmark  $request
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(int $id, DestroyBookmark $request)
     {
-        //
+        $validated = $request->validated();
+        $bookmark = Bookmark::findOrFail($id);
+        if (!Hash::check($validated['password_to_delete'], $bookmark->password_to_delete)) {
+            flash('Wrong password entered!', 'danger');
+            return redirect(route('bookmarks.show', ['bookmark' => $bookmark]));
+        }
+
+        $bookmark->delete();
+        return redirect(route('bookmarks.index'));
     }
 }
