@@ -5,8 +5,9 @@
     @include('bookmarks.forms.sort')
   </div>
 
-  @foreach ($bookmarks as $bookmark)
-    <div class="col-md-4">
+  @if ($bookmarks->isNotEmpty())
+    @foreach ($bookmarks as $bookmark)
+      <div class="col-md-4">
         <div class="card mb-4 shadow-sm">
           <div class="card-body">
               <p class="card-text">
@@ -20,8 +21,11 @@
               </div>
           </div>
         </div>
-    </div>
-  @endforeach
+      </div>
+    @endforeach
+  @else
+    <p>Bookmarks not found.</p>
+  @endif  
 
   <div class="col-sm-12">
     {{ $bookmarks->withQueryString()->links() }}
